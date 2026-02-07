@@ -3,19 +3,25 @@
     "source": "apps/functions",
     "runtime": "nodejs20"
   },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "emulators": {
     "functions": {
       "port": 5001
     },
-    "ui": {
-      "enabled": true
-    },
-    "singleProjectMode": true,
     "auth": {
       "port": 9099
     },
     "firestore": {
       "port": 8080
-    }
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
   }
 }
