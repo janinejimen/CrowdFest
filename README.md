@@ -1,4 +1,4 @@
-# WiCS2026
+# CrowdFest
 
 Features:
 Attendees
