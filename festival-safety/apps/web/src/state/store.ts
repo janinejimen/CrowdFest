@@ -92,9 +92,12 @@ type StoreState = {
 
   getInvitesForEvent: (eventId: string) => InviteItem[];
 
-  // ✅ EDIT SUPPORT
+  // edit support
   getEventById: (eventId: string) => EventItem | undefined;
   updateEvent: (eventId: string, patch: Partial<EventItem>) => void;
+
+  // ✅ delete support
+  deleteEvent: (eventId: string) => void;
 
   clearAllEventData: () => void;
 };
@@ -119,8 +122,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   },
 
   events: typeof window !== "undefined" ? loadJson<EventItem[]>(LS_EVENTS, []) : [],
-  invites:
-    typeof window !== "undefined" ? loadJson<InviteItem[]>(LS_INVITES, []) : [],
+  invites: typeof window !== "undefined" ? loadJson<InviteItem[]>(LS_INVITES, []) : [],
 
   addEvent: (event) => {
     const next = [event, ...get().events];
@@ -134,19 +136,23 @@ export const useAppStore = create<StoreState>((set, get) => ({
     set({ invites: next });
   },
 
-  getInvitesForEvent: (eventId) => {
-    return get().invites.filter((i) => i.eventId === eventId);
-  },
+  getInvitesForEvent: (eventId) => get().invites.filter((i) => i.eventId === eventId),
 
-  // ✅ EDIT SUPPORT
   getEventById: (eventId) => get().events.find((e) => e.id === eventId),
 
   updateEvent: (eventId, patch) => {
-    const next = get().events.map((e) =>
-      e.id === eventId ? { ...e, ...patch } : e
-    );
+    const next = get().events.map((e) => (e.id === eventId ? { ...e, ...patch } : e));
     saveJson(LS_EVENTS, next);
     set({ events: next });
+  },
+  deleteEvent: (eventId) => {
+    const nextEvents = get().events.filter((e) => e.id !== eventId);
+    const nextInvites = get().invites.filter((i) => i.eventId !== eventId);
+
+    saveJson(LS_EVENTS, nextEvents);
+    saveJson(LS_INVITES, nextInvites);
+
+    set({ events: nextEvents, invites: nextInvites });
   },
 
   clearAllEventData: () => {

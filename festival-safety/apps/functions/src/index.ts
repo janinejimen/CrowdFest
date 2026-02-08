@@ -8,14 +8,25 @@ import { FieldValue } from "firebase-admin/firestore";
 
 import { db } from "./config/firebaseAdmin";
 
+// Health check (v2)
+
 import * as tf from "@tensorflow/tfjs-node";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import sharp from "sharp";
 
 
+import * as tf from "@tensorflow/tfjs-node";
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
+import sharp from "sharp";
+
+
+<<<<<<< HEAD
+// Health check (v2)
+=======
 // ----------------------------------------------------
 // Health check (v2)
 // ----------------------------------------------------
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
 export const health = onRequest((req, res) => {
   res.status(200).json({
     ok: true,
@@ -24,9 +35,13 @@ export const health = onRequest((req, res) => {
   });
 });
 
+<<<<<<< HEAD
+// Create Firestore user doc on signup (v1 auth trigger)
+=======
 // ----------------------------------------------------
 // Create Firestore user doc on signup (v1 auth trigger)
 // ----------------------------------------------------
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
 export const createUserProfile = authV1.user().onCreate(async (user) => {
   const userRef = db().collection("users").doc(user.uid);
 
@@ -42,18 +57,25 @@ export const createUserProfile = authV1.user().onCreate(async (user) => {
   });
 });
 
+<<<<<<< HEAD
+=======
 // ----------------------------------------------------
 // Helpers
 // ----------------------------------------------------
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
 function makeCode() {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const pick = () => chars[Math.floor(Math.random() * chars.length)];
   return `${pick()}${pick()}${pick()}${pick()}-${pick()}${pick()}${pick()}${pick()}`;
 }
 
+<<<<<<< HEAD
+// 0) Set account type (v2 callable)
+=======
 // ----------------------------------------------------
 // 0) Set account type (v2 callable)
 // ----------------------------------------------------
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
 export const setAccountType = onCall(async (request) => {
   const data = (request.data ?? {}) as any;
   const auth = request.auth;
@@ -115,6 +137,7 @@ export const createEvent = onCall(async (request) => {
   return { eventId: ref.id };
 });
 
+
 // ----------------------------------------------------
 // 2) Create invite
 // ----------------------------------------------------
@@ -129,7 +152,17 @@ export const createInvite = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid invite data.");
   }
 
+<<<<<<< HEAD
+  const memberSnap = await db()
+    .collection("events")
+    .doc(eventId)
+    .collection("members")
+    .doc(auth.uid)
+    .get();
+
+=======
   const memberSnap = await db().collection("events").doc(eventId).collection("members").doc(auth.uid).get();
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
   if (memberSnap.data()?.role !== "organizer") {
     throw new HttpsError("permission-denied", "Organizer access required.");
   }
@@ -159,9 +192,7 @@ export const createInvite = onCall(async (request) => {
   return { code };
 });
 
-// ----------------------------------------------------
 // 3) Join event
-// ----------------------------------------------------
 export const joinWithCode = onCall(async (request) => {
   const data = (request.data ?? {}) as any;
   const auth = request.auth;
@@ -174,6 +205,24 @@ export const joinWithCode = onCall(async (request) => {
   const snap = await db().collection("inviteCodes").doc(code).get();
   if (!snap.exists) throw new HttpsError("not-found", "Invalid code.");
 
+
+  const { eventId, inviteId, role, active } = snap.data() as any;
+  if (!active) throw new HttpsError("failed-precondition", "Invite is inactive.");
+
+  await db()
+    .collection("events")
+    .doc(eventId)
+    .collection("members")
+    .doc(auth.uid)
+    .set({ role, joinedAt: new Date() }, { merge: true });
+
+  // ✅ increment uses using admin FieldValue
+  await db()
+    .collection("events")
+    .doc(eventId)
+    .collection("invites")
+    .doc(inviteId)
+    .update({ uses: FieldValue.increment(1) });
   const inviteData = snap.data() as
     | { eventId: string; inviteId: string; role: "attendee" | "organizer"; active: boolean }
     | undefined;
@@ -208,6 +257,29 @@ async function getCocoModel() {
   }
   return cocoModel;
 }
+// Other routes
+export { createReportFn, claimReportFn, resolveReportFn, postReportMessageFn } from "./reports/reports.routes";
+export { createTestEventFn } from "./testing/createTestEvent";
+export { setUserRoleTestFn } from "./testing/testAdmin.routes";
+
+
+
+// Local COCO-SSD model (cached)
+let cocoModel: any = null;
+
+async function getCocoModel() {
+  if (!cocoModel) {
+    console.log("🔄 Loading COCO-SSD model (first time)...");
+    cocoModel = await cocoSsd.load();
+    console.log("✅ COCO-SSD model ready");
+  }
+  return cocoModel;
+}
+
+// Other routes
+export { createReportFn, claimReportFn, resolveReportFn, postReportMessageFn } from "./reports/reports.routes";
+export { createTestEventFn } from "./testing/createTestEvent";
+export { setUserRoleTestFn } from "./testing/testAdmin.routes";
 
 // ----------------------------------------------------
 // Vision Analysis (Crowd + Flashlight Detection)

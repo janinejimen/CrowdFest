@@ -2,12 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+<<<<<<< HEAD
+=======
     // ---------- Helpers ----------
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
     function signedIn() {
       return request.auth != null;
     }
 
+<<<<<<< HEAD
+=======
     // ----- Events (existing helpers) -----
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
     function isEventOrganizer(eventId) {
       return signedIn()
         && get(/databases/$(database)/documents/events/$(eventId)/members/$(request.auth.uid)).data.role == "organizer";
@@ -18,6 +24,26 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/events/$(eventId)/reports/$(reportId)).data.createdByUid == request.auth.uid;
     }
 
+<<<<<<< HEAD
+    match /events/{eventId} {
+      match /reports/{reportId} {
+
+        // (you probably already have something like this for reports)
+        allow read: if isEventOrganizer(eventId) || isReportOwner(eventId, reportId);
+
+        match /messages/{messageId} {
+          // ✅ allow listing/reading messages for organizers or report owner
+          allow read, list: if isEventOrganizer(eventId) || isReportOwner(eventId, reportId);
+
+          // ✅ allow creating messages for organizers or report owner
+          allow create: if isEventOrganizer(eventId) || isReportOwner(eventId, reportId);
+
+          // optional: no edits/deletes
+          allow update, delete: if false;
+        }
+
+        // optional: lock down actions too
+=======
     // ----- Groups (NEW helpers) -----
     function isGroupMember(groupId) {
       return signedIn()
@@ -56,12 +82,16 @@ service cloud.firestore {
           allow update, delete: if false;
         }
 
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
         match /actions/{actionId} {
           allow read, list: if isEventOrganizer(eventId);
           allow create: if isEventOrganizer(eventId);
           allow update, delete: if false;
         }
       }
+<<<<<<< HEAD
+    }
+=======
 
       // (Optional) If your frontend needs to read event members for UI:
       // match /members/{uid} {
@@ -121,5 +151,6 @@ service cloud.firestore {
     //   allow read, write: if false;
     // }
 
+>>>>>>> 6a4aa5553558af8b7463bf889c73ee342ea7f2f4
   }
 }
