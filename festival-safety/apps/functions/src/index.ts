@@ -8,7 +8,9 @@ import { FieldValue } from "firebase-admin/firestore";
 
 import { db } from "./config/firebaseAdmin";
 
+// ----------------------------------------------------
 // Health check (v2)
+// ----------------------------------------------------
 export const health = onRequest((req, res) => {
   res.status(200).json({
     ok: true,
@@ -17,7 +19,9 @@ export const health = onRequest((req, res) => {
   });
 });
 
+// ----------------------------------------------------
 // Create Firestore user doc on signup (v1 auth trigger)
+// ----------------------------------------------------
 export const createUserProfile = authV1.user().onCreate(async (user) => {
   const userRef = db().collection("users").doc(user.uid);
 
@@ -33,13 +37,18 @@ export const createUserProfile = authV1.user().onCreate(async (user) => {
   });
 });
 
+// ----------------------------------------------------
+// Helpers
+// ----------------------------------------------------
 function makeCode() {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const pick = () => chars[Math.floor(Math.random() * chars.length)];
   return `${pick()}${pick()}${pick()}${pick()}-${pick()}${pick()}${pick()}${pick()}`;
 }
 
+// ----------------------------------------------------
 // 0) Set account type (v2 callable)
+// ----------------------------------------------------
 export const setAccountType = onCall(async (request) => {
   const data = (request.data ?? {}) as any;
   const auth = request.auth;
@@ -63,7 +72,9 @@ export const setAccountType = onCall(async (request) => {
   return { ok: true };
 });
 
+// ----------------------------------------------------
 // 1) Create event
+// ----------------------------------------------------
 export const createEvent = onCall(async (request) => {
   const data = (request.data ?? {}) as any;
   const auth = request.auth;
@@ -99,7 +110,9 @@ export const createEvent = onCall(async (request) => {
   return { eventId: ref.id };
 });
 
+// ----------------------------------------------------
 // 2) Create invite
+// ----------------------------------------------------
 export const createInvite = onCall(async (request) => {
   const data = (request.data ?? {}) as any;
   const auth = request.auth;
@@ -111,13 +124,7 @@ export const createInvite = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid invite data.");
   }
 
-  const memberSnap = await db()
-    .collection("events")
-    .doc(eventId)
-    .collection("members")
-    .doc(auth.uid)
-    .get();
-
+  const memberSnap = await db().collection("events").doc(eventId).collection("members").doc(auth.uid).get();
   if (memberSnap.data()?.role !== "organizer") {
     throw new HttpsError("permission-denied", "Organizer access required.");
   }
@@ -147,7 +154,9 @@ export const createInvite = onCall(async (request) => {
   return { code };
 });
 
+// ----------------------------------------------------
 // 3) Join event
+// ----------------------------------------------------
 export const joinWithCode = onCall(async (request) => {
   const data = (request.data ?? {}) as any;
   const auth = request.auth;
@@ -160,28 +169,35 @@ export const joinWithCode = onCall(async (request) => {
   const snap = await db().collection("inviteCodes").doc(code).get();
   if (!snap.exists) throw new HttpsError("not-found", "Invalid code.");
 
-  const { eventId, inviteId, role, active } = snap.data() as any;
-  if (!active) throw new HttpsError("failed-precondition", "Invite is inactive.");
+  const inviteData = snap.data() as
+    | { eventId: string; inviteId: string; role: "attendee" | "organizer"; active: boolean }
+    | undefined;
 
-  await db()
-    .collection("events")
-    .doc(eventId)
-    .collection("members")
-    .doc(auth.uid)
-    .set({ role, joinedAt: new Date() }, { merge: true });
+  if (!inviteData) throw new HttpsError("not-found", "Invalid code.");
+  if (!inviteData.active) throw new HttpsError("failed-precondition", "Invite is inactive.");
 
-  // ✅ increment uses using admin FieldValue
-  await db()
-    .collection("events")
-    .doc(eventId)
-    .collection("invites")
-    .doc(inviteId)
-    .update({ uses: FieldValue.increment(1) });
+  const { eventId, inviteId, role } = inviteData;
+
+  await db().collection("events").doc(eventId).collection("members").doc(auth.uid).set(
+    { role, joinedAt: new Date() },
+    { merge: true }
+  );
+
+  await db().collection("events").doc(eventId).collection("invites").doc(inviteId).update({
+    uses: FieldValue.increment(1),
+  });
 
   return { eventId, role };
 });
 
-// Other routes
+// ----------------------------------------------------
+// Other routes (re-exports)
+// ----------------------------------------------------
 export { createReportFn, claimReportFn, resolveReportFn, postReportMessageFn } from "./reports/reports.routes";
 export { createTestEventFn } from "./testing/createTestEvent";
 export { setUserRoleTestFn } from "./testing/testAdmin.routes";
+
+// ----------------------------------------------------
+// Groups (NEW)
+// ----------------------------------------------------
+export { createGroup, joinGroupWithCode, regenerateGroupCode } from "./groups/groups.routes";
