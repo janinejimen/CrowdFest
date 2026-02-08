@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "wics-hack26",
+    "wics-hack26": "wics-hack26"
+  },
+  "targets": {},
+  "etags": {}
+}

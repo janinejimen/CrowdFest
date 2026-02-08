@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isEventOrganizer(eventId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/events/$(eventId)/members/$(request.auth.uid)).data.role == "organizer";
+    }
+
+    function isReportOwner(eventId, reportId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/events/$(eventId)/reports/$(reportId)).data.createdByUid == request.auth.uid;
+    }
+
+    match /events/{eventId} {
+      match /reports/{reportId} {
+
+        // (you probably already have something like this for reports)
+        allow read: if isEventOrganizer(eventId) || isReportOwner(eventId, reportId);
+
+        match /messages/{messageId} {
+          // ✅ allow listing/reading messages for organizers or report owner
+          allow read, list: if isEventOrganizer(eventId) || isReportOwner(eventId, reportId);
+
+          // ✅ allow creating messages for organizers or report owner
+          allow create: if isEventOrganizer(eventId) || isReportOwner(eventId, reportId);
+
+          // optional: no edits/deletes
+          allow update, delete: if false;
+        }
+
+        // optional: lock down actions too
+        match /actions/{actionId} {
+          allow read, list: if isEventOrganizer(eventId);
+          allow create: if isEventOrganizer(eventId);
+          allow update, delete: if false;
+        }
+      }
+    }
+  }
+}
