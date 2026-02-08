@@ -25,7 +25,7 @@ export const UserTypeScreen = ({ navigation }: Props) => {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to</Text>
-        <Text style={styles.subtitle}>Crowd Safety</Text>
+        <Text style={styles.subtitle}>Crowd Fest</Text>
         
         <Text style={styles.question}>Are you an...</Text>
 

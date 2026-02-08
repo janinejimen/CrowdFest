@@ -12,6 +12,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme';
 
+import { Ionicons } from '@expo/vector-icons';
+
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
 };
@@ -33,6 +35,61 @@ const EVENTS: Event[] = [
     location: 'Zilker Park',
   },
 ];
+
+// export const HomeScreen = ({ navigation }: Props) => {
+//   const handleEventPress = (event: Event) => {
+//     navigation.navigate('EventHome', { 
+//       eventId: event.id, 
+//       eventName: event.name 
+//     });
+//   };
+
+//   return (
+//     <SafeAreaView style={styles.container}>
+//       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      
+//       {/* Updated header with profile button */}
+//       <View style={styles.header}>
+//         <View>
+//           <Text style={styles.title}>Hello,</Text>
+//           <Text style={styles.subtitle}>Events</Text>
+//         </View>
+//         <TouchableOpacity 
+//           style={styles.profileButton}
+//           onPress={() => navigation.navigate('Profile')}
+//         >
+//           <Ionicons name="person-circle" size={36} color={Colors.accent} />
+//         </TouchableOpacity>
+//       </View>
+
+//       <FlatList
+//         data={EVENTS}
+//         renderItem={renderEvent}
+//         keyExtractor={(item) => item.id}
+//         contentContainerStyle={styles.listContent}
+//       />
+//     </SafeAreaView>
+//   );
+// };
+
+// // Add these styles to the existing StyleSheet.create:
+// const styles = StyleSheet.create({
+//   // ... existing styles ...
+  
+//   header: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     paddingHorizontal: Spacing.xl,
+//     paddingTop: Spacing.xl,
+//     paddingBottom: Spacing.md,
+//   },
+//   profileButton: {
+//     padding: Spacing.xs,
+//   },
+  
+//   // ... rest of existing styles ...
+// });
 
 export const HomeScreen = ({ navigation }: Props) => {
   const handleEventPress = (event: Event) => {

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { EventHomeScreen } from '../features/EventHomeScreen';
 import { ChatbotScreen } from '../features/ChatbotScreen';
 import { EmergencyScreen } from '../features/EmergencyScreen';
+import { CrowdMapScreen } from '../features/CrowdMapScreen';
 import { Colors } from '../theme';
 import type { EventTabParamList } from '../types/navigation';
 
@@ -33,6 +34,16 @@ export const EventTabNavigator = ({ route }: any) => {
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="CrowdMapTab"
+        component={CrowdMapScreen}
+        options={{
+          tabBarLabel: 'Map',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="map" size={size} color={color} />
           ),
         }}
       />
