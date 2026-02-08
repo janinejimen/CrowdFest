@@ -11,14 +11,25 @@ import {
 import { theme } from "./theme";
 
 import DashboardPage from "../features/dashboard/DashboardPage";
-import EventHomePage from "../features/event-home/EventHomePage";
+import ProfileSetupPage from "../features/profile/ProfileSetupPage";
+import ProfilePage from "../features/profile/ProfilePage";
+
+import EventHomePage from "../features/event/EventHomePage";
+import CreateEventPage from "../features/event/CreateEventPage";
+import EventDetailPage from "../features/event/EventDetailPage";
+
 import InvitesPage from "../features/invites/InvitesPage";
-import NotificationsPage from "../features/notifications/NotificationsPage";
+import ComputerVisionPage from "../features/computer-vision/ComputerVisionPage";
+import ReportsPage from "../features/report/ReportsPage";
+
+import { useAppStore } from "../state/store";
 
 /* ---------- Nav Link ---------- */
 function NavItem({ to, label }: { to: string; label: string }) {
   const location = useLocation();
-  const active = location.pathname === to;
+
+  // ✅ highlight parent tabs too (e.g. /events and /events/123)
+  const active = location.pathname === to || location.pathname.startsWith(to + "/");
 
   return (
     <Link
@@ -52,7 +63,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     >
       <header
         style={{
-          background: theme.cream,
+          background: theme.surface,
           borderBottom: `1px solid ${theme.border}`,
           padding: "14px 18px",
           display: "flex",
@@ -69,34 +80,42 @@ function AppShell({ children }: { children: React.ReactNode }) {
             color: theme.text,
           }}
         >
-          WiCS2026 · Admin
+          CrowdFest Admin
         </div>
 
-        <nav
-          style={{
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
-          }}
-        >
+        <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <NavItem to="/dashboard" label="Dashboard" />
+          <NavItem to="/computer-vision" label="Vision" />
           <NavItem to="/events" label="Events" />
           <NavItem to="/invites" label="Invites" />
-          <NavItem to="/notifications" label="Alerts" />
+          <NavItem to="/reports" label="Reports" />
+          <NavItem to="/profile" label="Profile" />
         </nav>
       </header>
 
-      <main
-        style={{
-          padding: 16,
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
+      <main style={{ padding: 16, maxWidth: 1200, margin: "0 auto" }}>
         {children}
       </main>
     </div>
   );
+}
+
+function RequireOutOfField({ children }: { children: React.ReactNode }) {
+  const profile = useAppStore((s) => s.organizerProfile);
+  const location = useLocation();
+
+  // Allow the setup page always
+  if (location.pathname === "/profile/setup") return <>{children}</>;
+
+  // No profile? force setup
+  if (!profile) return <Navigate to="/profile/setup" replace />;
+
+  // Wrong role? force setup
+  if (profile.role !== "OUT_OF_FIELD") {
+    return <Navigate to="/profile/setup" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 /* ---------- Router ---------- */
@@ -104,14 +123,35 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <AppShell>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/events" element={<EventHomePage />} />
-          <Route path="/invites" element={<InvitesPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="*" element={<div>Page not found</div>} />
-        </Routes>
+        <RequireOutOfField>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* Profile */}
+            <Route path="/profile/setup" element={<ProfileSetupPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+
+            {/* Dashboard */}
+            <Route path="/dashboard" element={<DashboardPage />} />
+
+            {/* Vision */}
+            <Route path="/computer-vision" element={<ComputerVisionPage />} />
+
+            {/* Events */}
+            <Route path="/events" element={<EventHomePage />} />
+            <Route path="/events/new" element={<CreateEventPage />} />
+            <Route path="/events/:eventId" element={<EventDetailPage />} />
+            <Route path="/events/:eventId/invites" element={<InvitesPage />} />
+
+            {/* Invites (global placeholder) */}
+            <Route path="/invites" element={<InvitesPage />} />
+
+            {/* Reports */}
+            <Route path="/reports" element={<ReportsPage />} />
+
+            <Route path="*" element={<div>Page not found</div>} />
+          </Routes>
+        </RequireOutOfField>
       </AppShell>
     </BrowserRouter>
   );
