@@ -6,6 +6,13 @@ import { useAppStore } from "../../state/store";
 export default function EventHomePage() {
   const navigate = useNavigate();
   const events = useAppStore((s) => s.events);
+  const deleteEvent = useAppStore((s) => s.deleteEvent);
+
+  const onDelete = (eventId: string, name: string) => {
+    const ok = window.confirm(`Delete "${name}"?\n\nThis will also remove its invites (MVP).`);
+    if (!ok) return;
+    deleteEvent(eventId);
+  };
 
   return (
     <div style={styles.page}>
@@ -38,24 +45,16 @@ export default function EventHomePage() {
               {events.map((e) => (
                 <tr key={e.id}>
                   <td style={styles.tdStrong}>{e.name}</td>
-                  <td style={styles.td}>
-                    {new Date(e.startsAt).toLocaleString()}
-                  </td>
+                  <td style={styles.td}>{new Date(e.startsAt).toLocaleString()}</td>
                   <td style={styles.td}>{e.venue || "—"}</td>
 
                   <td style={styles.td}>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        onClick={() => navigate(`/events/${e.id}`)}
-                        style={styles.secondaryBtn}
-                      >
+                      <button onClick={() => navigate(`/events/${e.id}`)} style={styles.secondaryBtn}>
                         Edit
                       </button>
 
-                      <button
-                        onClick={() => navigate(`/events/${e.id}/invites`)}
-                        style={styles.secondaryBtn}
-                      >
+                      <button onClick={() => navigate(`/events/${e.id}/invites`)} style={styles.secondaryBtn}>
                         Invites
                       </button>
 
@@ -64,6 +63,13 @@ export default function EventHomePage() {
                         style={styles.secondaryBtn}
                       >
                         Copy Link
+                      </button>
+
+                      <button
+                        onClick={() => onDelete(e.id, e.name)}
+                        style={{ ...styles.secondaryBtn, border: `1px solid ${theme.coral}` }}
+                      >
+                        Delete
                       </button>
                     </div>
                   </td>

@@ -1,4 +1,5 @@
-import React from "react";
+// festival-safety/apps/web/src/app/router.tsx
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -14,6 +15,10 @@ import DashboardPage from "../features/dashboard/DashboardPage";
 import ProfileSetupPage from "../features/profile/ProfileSetupPage";
 import ProfilePage from "../features/profile/ProfilePage";
 
+import LoginPage from "../features/auth/LoginPage";
+import SignupPage from "../features/auth/SignupPage";
+import GetStartedPage from "../features/auth/GetStartedPage";
+
 import EventHomePage from "../features/event/EventHomePage";
 import CreateEventPage from "../features/event/CreateEventPage";
 import EventDetailPage from "../features/event/EventDetailPage";
@@ -27,9 +32,7 @@ import { useAppStore } from "../state/store";
 /* ---------- Nav Link ---------- */
 function NavItem({ to, label }: { to: string; label: string }) {
   const location = useLocation();
-
-  // ✅ highlight parent tabs too (e.g. /events and /events/123)
-  const active = location.pathname === to || location.pathname.startsWith(to + "/");
+  const active = location.pathname === to;
 
   return (
     <Link
@@ -52,6 +55,15 @@ function NavItem({ to, label }: { to: string; label: string }) {
 
 /* ---------- App Shell ---------- */
 function AppShell({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  // Hide top nav on onboarding/auth pages
+  const hideNav =
+    location.pathname === "/get-started" ||
+    location.pathname === "/profile/setup" ||
+    location.pathname === "/login" ||
+    location.pathname === "/signup";
+
   return (
     <div
       style={{
@@ -83,14 +95,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
           CrowdFest Admin
         </div>
 
-        <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <NavItem to="/dashboard" label="Dashboard" />
-          <NavItem to="/computer-vision" label="Vision" />
-          <NavItem to="/events" label="Events" />
-          <NavItem to="/invites" label="Invites" />
-          <NavItem to="/reports" label="Reports" />
-          <NavItem to="/profile" label="Profile" />
-        </nav>
+        {!hideNav && (
+          <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <NavItem to="/dashboard" label="Dashboard" />
+            <NavItem to="/computer-vision" label="Vision" />
+            <NavItem to="/events" label="Events" />
+            <NavItem to="/invites" label="Invites" />
+            <NavItem to="/reports" label="Reports" />
+            <NavItem to="/profile" label="Profile" />
+          </nav>
+        )}
       </header>
 
       <main style={{ padding: 16, maxWidth: 1200, margin: "0 auto" }}>
@@ -100,15 +114,62 @@ function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ---------- Persist Hydration Gate ---------- */
+/**
+ * If your store uses zustand/persist, the persisted state is rehydrated async.
+ * During that moment, organizerProfile can be undefined and redirects can loop.
+ *
+ * This hook waits until hydration finishes (if persist exists).
+ * If persist is not used, it resolves immediately.
+ */
+function useHydratedStore() {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const anyStore = useAppStore as any;
+
+    // No persist? consider hydrated immediately
+    if (!anyStore.persist?.hasHydrated || !anyStore.persist?.onFinishHydration) {
+      setHydrated(true);
+      return;
+    }
+
+    // Already hydrated
+    if (anyStore.persist.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+
+    // Wait for hydration
+    const unsub = anyStore.persist.onFinishHydration(() => setHydrated(true));
+    return unsub;
+  }, []);
+
+  return hydrated;
+}
+
+/* ---------- Guard ---------- */
 function RequireOutOfField({ children }: { children: React.ReactNode }) {
+  const hydrated = useHydratedStore();
   const profile = useAppStore((s) => s.organizerProfile);
   const location = useLocation();
 
-  // Allow the setup page always
-  if (location.pathname === "/profile/setup") return <>{children}</>;
+  // ⛔ Don't route/redirect until store is ready (prevents white-screen loops)
+  if (!hydrated) return null;
 
-  // No profile? force setup
-  if (!profile) return <Navigate to="/profile/setup" replace />;
+  // ✅ Always allow onboarding/auth pages
+  if (
+    location.pathname === "/get-started" ||
+    location.pathname === "/login" ||
+    location.pathname === "/signup" ||
+    location.pathname === "/profile/setup" ||
+    location.pathname === "/profile"
+  ) {
+    return <>{children}</>;
+  }
+
+  // No profile? send to get-started
+  if (!profile) return <Navigate to="/get-started" replace />;
 
   // Wrong role? force setup
   if (profile.role !== "OUT_OF_FIELD") {
@@ -118,6 +179,20 @@ function RequireOutOfField({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/* ---------- Root Redirect ---------- */
+function RootRedirect() {
+  const hydrated = useHydratedStore();
+  const profile = useAppStore((s) => s.organizerProfile);
+
+  if (!hydrated) return null;
+
+  return profile ? (
+    <Navigate to="/dashboard" replace />
+  ) : (
+    <Navigate to="/get-started" replace />
+  );
+}
+
 /* ---------- Router ---------- */
 export default function AppRouter() {
   return (
@@ -125,7 +200,13 @@ export default function AppRouter() {
       <AppShell>
         <RequireOutOfField>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Root */}
+            <Route path="/" element={<RootRedirect />} />
+
+            {/* Onboarding / Auth */}
+            <Route path="/get-started" element={<GetStartedPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
 
             {/* Profile */}
             <Route path="/profile/setup" element={<ProfileSetupPage />} />
@@ -141,10 +222,10 @@ export default function AppRouter() {
             <Route path="/events" element={<EventHomePage />} />
             <Route path="/events/new" element={<CreateEventPage />} />
             <Route path="/events/:eventId" element={<EventDetailPage />} />
-            <Route path="/events/:eventId/invites" element={<InvitesPage />} />
 
-            {/* Invites (global placeholder) */}
+            {/* Invites */}
             <Route path="/invites" element={<InvitesPage />} />
+            <Route path="/events/:eventId/invites" element={<InvitesPage />} />
 
             {/* Reports */}
             <Route path="/reports" element={<ReportsPage />} />

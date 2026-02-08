@@ -1,3 +1,4 @@
+// festival-safety/apps/web/src/features/profile/ProfilePage.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "../../state/store";
@@ -10,7 +11,9 @@ export default function ProfilePage() {
 
   // If no profile yet, send to setup
   React.useEffect(() => {
-    if (!organizerProfile) navigate("/profile/setup", { replace: true });
+    if (!organizerProfile) {
+      navigate("/profile/setup", { replace: true });
+    }
   }, [organizerProfile, navigate]);
 
   if (!organizerProfile) return null;
@@ -42,7 +45,7 @@ export default function ProfilePage() {
 
         <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
           <button
-            onClick={() => navigate("/profile/setup")}
+           onClick={() => navigate("/profile/setup", { state: { from: "profile" } })}
             style={btn(theme.blue, theme.surface)}
           >
             Edit Profile
@@ -51,7 +54,7 @@ export default function ProfilePage() {
           <button
             onClick={() => {
               clearOrganizerProfile();
-              navigate("/profile/setup");
+              navigate("/profile/setup", { replace: true });
             }}
             style={btn(theme.surface, theme.text, theme.border)}
           >
